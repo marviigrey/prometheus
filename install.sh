@@ -17,6 +17,7 @@ sudo cp -r console_libraries/ /etc/prometheus/
 sudo chown -R prometheus:prometheus /etc/prometheus/consoles
 sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries/
 sudo cp prometheus.yml /etc/prometheus/
+cd
 sudo cat > /etc/systemd/system/prometheus.service
 [Unit]
 Description=Prometheus
