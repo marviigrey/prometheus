@@ -1,0 +1,23 @@
+global:
+ scrape_intervals: 15s #this is a default setting that scrape the target node at an interval of15seconds
+ evaluation_interval: 15s #evaluates rules every 15 seconds,the default is every 1min
+
+alerting: 
+  alertmanagers:
+  - static_configs:
+    - targets:
+      - alertmanager:9093
+#loads rule file once and evaluate them periodically according to the global evaluation_interval.
+rule_files:
+ - "first_rules.yaml"
+ - "second_rules.yaml"
+ 
+scrpe_configs:
+ - job_name: "prometheus"
+   static_configs: 
+    - targets: ["192.138.168.5:9090"]
+ - job_name: "scrape_node"
+   static_configs:
+     - targets: ["12.34.54.32:9090"]
+     
+     #soon as you add this file into your server,ensure to restart prometheus
