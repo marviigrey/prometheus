@@ -382,3 +382,140 @@ You can verify your changes using curl command:
 
 
 curl -u prometheus:secret-password -k https://node01:9100/metrics
+===================================================================================
+Metrics
+A metrics have three components:
+name
+labels (key value pairs)
+metric value.
+
+node_cpu_total{cpu="0",mode="idle"}2554367.34
+ metric-name     labels             metric-value
+
+this metrics gotten from a node_exporter represents the total number of seconds
+the cpu spent on idle mode.
+labels provides which cpu the metrics is for and the state of the cpu,clearly it shows
+that the metrics belong to the cpu 0 and its in an idle state. So the metrics value
+showsthe total number of seconds the cpu 0 spent in an idle mode or state.
+
+TimeStamp.
+When prometheus scrapes targets and retrieve metrics,it also stores the time at which
+the metric was scraped. The timestamp is stored in an epoch format which is the 
+number of seconds that have elapsed since january 1st 1970 UTC,althogh your promethus
+dashboard will have an inbuilt converter to convert it into real time.
+
+TIME SERIES
+Timestamps series is a collection of timestamped metrics scraped from target
+systems. if we have a particular metrics with different or unique instance 
+labels,each metrics collected from the instances at a particular interval of 
+time is known as the time series. If we tell prometheus to scrape metrics 
+of instances every 15 mins,the collection of the timestamps collected after 
+every 15 min is known as time series.
+
+Time series in Prometheus is like a collection of pictures that shows how
+something changes over time. Imagine you took a picture of a flower every day 
+for a week. You could put all those pictures together and see how the flower 
+changed over time, maybe it opened up more or changed color.
+
+In Prometheus, instead of pictures, we take measurements of things like how 
+hot your computer is or how many visitors your website gets every minute. 
+Then we put all those measurements together in a big list and look at them 
+over time. This helps us understand how things change and find patterns we 
+might not have noticed otherwise.
+
+METRICS ATTRIBUTE
+1.TYPE: This tells you what type of metrics youre seeing
+2.HELP: Gives a detailed description of the metrics
+
+TYPES OF METRICS.
+Counter: Tells you how many times something happened,it can only increase in
+number of occurence. It's efficient in measuring things like total number of
+requests;total exceptions,total number of job execution. 
+
+Gauge: It measures the current value of a metric,it can go either up or down,
+depending on the current value. Its efficient in measuring the current value 
+of CPU utilization,available system Memory,number of concurrent requests etc.
+
+Histogram: This type tells how big values are. It groups metrics into a con-
+figured bucket sizes,lets say we have three buckets configured to give us
+the number of requests responded by our system in three diffent time frames,
+< 1s.< 0.5s, and< 0.2s. each bucket is going to store metrics of response time
+into the bucket in respect to the timeframe configuration. Also applicable to
+request size e.g < 1500Mb, > 200Gb.
+
+Summary: Its similar to the histogram but the only difference is that you don't
+have to define quantiles ahead of time,you ca use it to determine how a specific
+observation fell below a point X value. for example we have:
+RESPONSE TIME:
+20% = .3s
+50% = .5s
+30% = 1s
+
+Request Size:
+20% = 50Mb
+30% = 600Mb
+50% = 730Mb
+ 
+  METRIC RULES
+1. Metrics name specifies a general feature of a system to be measured.
+2. A metric can contain ASCII letters numbers colons and underscore.
+3. Must match the regex [a-zA-Z_:][a-zA-Z0-9_:]*
+4. Colons are reserved for recording rules,specific rules designed to run 
+queries from our prometheus server. Do not use colons when creating metrics 
+name.
+
+
+PROPERTIES OF LABELS:
+1. They are key=value pairs associated with a metric.
+2. Allows you to split up metric by a specified criteria.
+3. metric can have more than one label.
+4. ASCII letter numbers colons and underscore.
+5. Must match the regex [a-zA-Z_:][a-zA-Z0-9_:]*
+
+USING LABELS
+this metrics collected from the APi of an E-COMMERCE APP.
+/auth ---- request_auth_total
+ 
+/user ---- request_user_total
+
+/products --- requests_product_total
+
+/cart --- requests_cart_total
+
+/orders --- requests_orders_total
+
+each of this metrics collects the total number of requests on a specific end-
+point of our e-commerce,the /auth get reoquests of users authentifications 
+same goes for the orders,the total number of requests made from the /user end-
+point of our e-commerce app.By doing the we won't be quick enough using this
+particular label as we will be getting labels for each endpoint before adding 
+up. To solve this issue,we create a request to get the total number of request 
+from an endpoint.
+
+request_total{path=/user}
+
+request_total{path=/auth}
+
+request_total{path=/products}
+
+request_total{path=/cart}.
+
+And if we want to arrive a the total number of request across the endpoints
+we will use the label:
+
+ sum(requests_total)
+
+We can have more than one labels in a metric. Lets say we have a specific 
+endpoint and we want to track the method on the HTTP,such as get,post,patch,
+delete we can add the {method=get} to the label.
+
+ request_total{path=/auth, method=post}
+
+INTERNAL LABELS.
+This are in-built labels given by prometheus. just like the name of a metric
+is a label given by prometheus. they are surrounded by __.
+
+{_name_=node_cpu_seconds_total,cpu=0}.
+
+Every metric is assigned to two labels by default which is "instance" and "job"
+
