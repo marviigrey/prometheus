@@ -1,0 +1,112 @@
+We can run prometheus on our docker host machine as a  containers.The metrics 
+collected isn't for the containers hosted on docker but for the docker engine
+itself. To do this we will need to pull the official image of prometheus from
+docker hub which is prom/prometheus. https://hub.docker.com/u/prom after pulling
+you willalso configure your prometheus.yml file as usual,expose the port and 
+set up volume mounts to bind volumes between your host machine and container.
+
+docker run -d /path-to-config-file/prometheus.yml:/etc/prometheus/prometheus.yml
+ -p 9090:9090 prom/prometheus
+
+This will run prometheus on prometheus on your docker machine.
+
+prometheus.yml
+
+  global:
+  scrape_configs:
+   - job_name: "prometheus"
+     static_configs: 
+      - targets: ["prometheus:9090"]
+
+Promtool is a validation tool by prometheus to help validate resources in your
+prometheus engine.
+It helps in:
+1. validating the prometheus.yml 
+2. validates rule files
+3. validates metrics passed to prometheus are in the correct format.
+4. debugging and profiling prometheus server.
+5. performing unit tests on recording or alerting rules.
+
+To run promtool on your cli:
+promtool <command> <option> 
+e.g
+promtool check config /etc/prometheus/prometheus.yml
+This above command is used to validate the prometheus config file.
+If the config file is okay it will let you proceed but if it's not you will get
+an error message describing where the issue is coming from, this helps us 
+to test our code before moving to a production environment. There are other 
+features of promtool that will be discussed later on this course.
+
+Container metrics.
+This is how we scrape metrics from containers hosted on docker engine.
+First we create a daemon.json file in the /etc/docker directory on our host:
+
+    {
+     "metrics-addr" : "<ip-addr:port>",
+     "experimental" : true
+}
+
+The ip addr is where you want to expose your metrics on your docker engine.
+restart your docker machine and run curl localhost:port/metrics
+     
+On your prometheus config file we can add docker as a job or target to scrape
+metrics from.
+ scrape_configs: 
+   - job_name: "docker"
+     static_configs: 
+      - targets: ["<ip-addr:port>"]
+
+For the containers,we are going to configure a docker-compose file for cADvisor
+
+
+
+version: '3.2'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+    - 9090:9090
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+    - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+    - cadvisor
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+    - 8080:8080
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:rw
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+    - redis
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+    - 6379:6379
+
+This compose file must be running on your docker engine as a container and 
+metrics are exposed on localhost:8080/metrics
+We then set this scrape config on our prometheus.yml file so we can be able to
+collect and query metrics on the expression browser of prometheus. for more info
+on the cadvisor: https://github.com/google/cadvisor
+
+
+scrape_configs: 
+   - job_name: "cadvisor"
+     static_configs: 
+      - targets: ["<ip-addr:port>"]
+
+Docker engine metrics only gives metrics on docker while cadvisor gives metrics
+on containers hosted on docker. The docker engine metrics provide metrics data
+such as:
+how much CPU does docker use,number of failed images,response time on container
+actions etc and for the docker containers using cadvisor,we can get metrics of:
+how much cpu or memory used by containers,number of processes running on each 
+container,container uptime and more.
